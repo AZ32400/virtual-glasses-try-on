@@ -42,7 +42,7 @@
         const ctx = canvas.getContext('2d');
 
         let selectedGlasses = new Image();
-        selectedGlasses.src = './glasses.png'; // Replace with the actual path to glasses.png
+        selectedGlasses.src = './glasses.png'; // Replace with actual image path or URL
 
         async function startVideo() {
             try {
@@ -55,12 +55,9 @@
 
         async function loadModels() {
             try {
-                await faceapi.nets.tinyFaceDetector.loadFromUri(
-                    'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js/weights'
-                );
-                await faceapi.nets.faceLandmark68Net.loadFromUri(
-                    'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js/weights'
-                );
+                // Using correct model path from jsDelivr CDN
+                await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights');
                 detectFace();
             } catch (err) {
                 console.error('Error loading models:', err);
