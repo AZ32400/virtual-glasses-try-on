@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Glasses Try-On</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        canvas,
+        video {
+            position: absolute;
+        }
+
+        video {
+            z-index: 1;
+        }
+
+        canvas {
+            z-index: 2;
+        }
+    </style>
+</head>
+
+<body>
+    <video id="video" autoplay muted></video>
+    <canvas id="overlay"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('overlay');
+        const ctx = canvas.getContext('2d');
+
+        let selectedGlasses = new Image();
+        selectedGlasses.src = './glasses.png'; // Replace with the actual path to glasses.png
+
+        async function startVideo() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error('Error starting video:', err);
+            }
+        }
+
+        async function loadModels() {
+            try {
+                await faceapi.nets.tinyFaceDetector.loadFromUri(
+                    'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js/weights'
+                );
+                await faceapi.nets.faceLandmark68Net.loadFromUri(
+                    'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js/weights'
+                );
+                detectFace();
+            } catch (err) {
+                console.error('Error loading models:', err);
+            }
+        }
+
+        async function detectFace() {
+            video.addEventListener('loadeddata', () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+            });
+
+            async function onFrame() {
+                const detections = await faceapi
+                    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks();
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                if (!detections) {
+                    ctx.font = '24px Arial';
+                    ctx.fillStyle = 'red';
+                    ctx.fillText('No face detected. Please position your face.', 50, 50);
+                } else {
+                    const landmarks = detections.landmarks;
+                    const nose = landmarks.getNose();
+                    const leftEye = landmarks.getLeftEye();
+                    const rightEye = landmarks.getRightEye();
+
+                    const glassesWidth = Math.abs(rightEye[0].x - leftEye[3].x) * 2;
+                    const glassesHeight = glassesWidth / 2;
+                    const glassesX = nose[0].x - glassesWidth / 2;
+                    const glassesY = nose[0].y - glassesHeight / 2;
+
+                    ctx.drawImage(selectedGlasses, glassesX, glassesY, glassesWidth, glassesHeight);
+                }
+
+                requestAnimationFrame(onFrame);
+            }
+
+            onFrame();
+        }
+
+        startVideo().then(loadModels);
+    </script>
+</body>
+
+</html>
